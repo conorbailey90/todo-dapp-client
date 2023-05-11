@@ -1,0 +1,38 @@
+.task__form {
+  width: 80%;
+  max-width: 1000px;
+}
+
+input{
+    background-color: #161616;
+    border: none;
+   
+}    
+
+.text__input{
+    width: calc(100% - (100px + 1rem));
+    border-radius: 0;
+    border-bottom: 1px solid white;
+    padding: 1rem 0 ;
+}
+
+.text__input:focus{
+   outline: none;
+  
+}
+
+.submit__btn{
+    width: 100px;
+    text-align: center;
+    border-bottom: 1px solid white;
+    padding: 1rem ;
+    border-radius: 0;
+    margin-left: 1rem ;
+}
+
+.submit__btn:hover{
+    opacity: .7;
+    cursor: pointer;
+}
+
+

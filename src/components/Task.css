@@ -1,0 +1,21 @@
+
+
+.task__panel{
+    display: flex;
+    align-items: center;
+    padding: .75rem;
+    justify-content: space-between;
+    border: 1px solid rgb(0, 0, 0);
+    background-color: #292929;
+    border-radius: 10px;
+    margin-bottom: .5rem;
+}
+
+.delete{
+    width: 10px;
+    cursor: pointer;
+}
+
+.delete:hover{
+ opacity: .7;
+}
