@@ -32,6 +32,7 @@ function App() {
       // console.log(`Connected to chain: ${chainId}`)
 
       if(availableNetworks.hasOwnProperty(chainId)){
+        console.log('yes!!!!!')
         setChosenNetwork(availableNetworks[chainId]);
         setCorrectNetwork(true);
       }else{
@@ -40,13 +41,14 @@ function App() {
           netString += `- ${availableNetworks[key]} \n `
         }
         alert(`Please connect to one of the following networks in MetaMask: \n \n ${netString}`);
+        setCorrectNetwork(false);
         return
       }
 
       const accounts = await ethereum.request({ method: 'eth_requestAccounts' })
       setCurrentAccount(accounts[0]) 
     }catch(err){
-      console.log(err.code)
+      console.error(err)
       if(err.code === -32002){
         alert('Open the Metamask extension to complete sign on.')
       }
@@ -65,7 +67,8 @@ function App() {
         let tempTask = {id: taskId,...task};
         setTasks([...tasks, tempTask])
     }catch(err){
-      console.log(err)
+      console.log(err);
+      alert('Something went wrong.')
     }
   }
 
@@ -94,7 +97,7 @@ function App() {
 
   // Set up contract with ethers js library
   useEffect(() => {
-    if(currentAccount){
+    if(currentAccount && chosenNetwork){
       const setupContract = async () => {
         const provider = new ethers.BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();
@@ -119,20 +122,26 @@ function App() {
           }
           console.log(`Please connect to one of the following networks in MetaMask: \n \n ${netString}`);
         }else{
+          setCorrectNetwork(true)
           setChosenNetwork(availableNetworks[chain]);
         }
         window.location.reload();
       });
 
-      ethereum.on("accountsChanged", (accounts) => {
+      ethereum.on("accountsChanged", async (accounts) => {
         if(accounts.length === 0){ // signed out
           window.location.reload();
         }else{
           setCurrentAccount(accounts[0]);
-        }
-      });
+          const chainId = await ethereum.request({ method: 'eth_chainId' });    
+          if(availableNetworks.hasOwnProperty(chainId)){
+            setChosenNetwork(availableNetworks[chainId]);
+            setCorrectNetwork(true);
+          }
+       }
+    })
     }
-  },[chosenNetwork]);
+},[chosenNetwork]);
 
   return (
     <div className="App">
