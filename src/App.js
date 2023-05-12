@@ -32,7 +32,6 @@ function App() {
       // console.log(`Connected to chain: ${chainId}`)
 
       if(availableNetworks.hasOwnProperty(chainId)){
-        console.log('yes!!!!!')
         setChosenNetwork(availableNetworks[chainId]);
         setCorrectNetwork(true);
       }else{
@@ -94,7 +93,6 @@ function App() {
     getAllTasks();
   }, [taskContract]);
 
-
   // Set up contract with ethers js library
   useEffect(() => {
     if(currentAccount && chosenNetwork){
@@ -106,8 +104,6 @@ function App() {
       }
       setupContract(); 
     }
-
-  
   }, [chosenNetwork, currentAccount])
 
   // Detect change in Metamask account
@@ -122,7 +118,7 @@ function App() {
           }
           console.log(`Please connect to one of the following networks in MetaMask: \n \n ${netString}`);
         }else{
-          setCorrectNetwork(true)
+          setCorrectNetwork(true);
           setChosenNetwork(availableNetworks[chain]);
         }
         window.location.reload();
