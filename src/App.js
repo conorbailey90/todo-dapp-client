@@ -1,6 +1,6 @@
 import { ethers } from 'ethers';
 import { useEffect, useState} from 'react';
-import { TaskContractAddress } from './config';
+import { TaskContractAddress, availableNetworks } from './config';
 import TaskAbi from './abi/TaskContractMain.json';
 
 // Components
@@ -13,7 +13,7 @@ import './App.css';
 function App() {
   const [taskContract, setTaskContract] = useState(null);
   const [tasks, setTasks] = useState([]);
-
+  const [chosenNetwork, setChosenNetwork] = useState(null)
   const [currentAccount, setCurrentAccount] = useState('');
   const [correctNetwork, setCorrectNetwork] = useState(false);
 
@@ -27,26 +27,24 @@ function App() {
         return
       }
 
-      // Check that user is connected to the correct network...
+      // Check that user is connected to a correct available network...
       const chainId = await ethereum.request({ method: 'eth_chainId' });
-      console.log(`Connected to chain: ${chainId}`)
-      const hardhatChainId = '0x7a69';
-      if(chainId !== hardhatChainId){
-        alert('You are not connected to the Harhat network....');
-        return
-      }else{
+      // console.log(`Connected to chain: ${chainId}`)
+
+      if(availableNetworks.hasOwnProperty(chainId)){
+        setChosenNetwork(availableNetworks[chainId]);
         setCorrectNetwork(true);
+      }else{
+        let netString = ''
+        for(let key in availableNetworks){
+          netString += `- ${availableNetworks[key]} \n `
+        }
+        alert(`Please connect to one of the following networks in MetaMask: \n \n ${netString}`);
+        return
       }
 
       const accounts = await ethereum.request({ method: 'eth_requestAccounts' })
-      setCurrentAccount(accounts[0])
-
-      const provider = new ethers.BrowserProvider(ethereum);
-
-      const signer = await provider.getSigner();
-  
-      const TaskContract = new ethers.Contract(TaskContractAddress, TaskAbi.abi, signer); 
-      setTaskContract(TaskContract);   
+      setCurrentAccount(accounts[0]) 
     }catch(err){
       console.log(err.code)
       if(err.code === -32002){
@@ -64,9 +62,7 @@ function App() {
     try{
         await taskContract.addTask(task.taskText, task.isDeleted);
         let taskId = await taskContract.getTasksLength();
-        console.log(taskId)
         let tempTask = {id: taskId,...task};
-        console.log(tempTask)
         setTasks([...tasks, tempTask])
     }catch(err){
       console.log(err)
@@ -89,43 +85,61 @@ function App() {
     const getAllTasks = async () => {
       if(taskContract){
         const allTasks = await taskContract.getTasks();
-        console.log(allTasks)
         setTasks(allTasks);
       }
     }
     getAllTasks();
-   
   }, [taskContract]);
+
+
+  // Set up contract with ethers js library
+  useEffect(() => {
+    if(currentAccount){
+      const setupContract = async () => {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const TaskContract = new ethers.Contract(TaskContractAddress[chosenNetwork], TaskAbi.abi, signer); 
+        setTaskContract(TaskContract); 
+      }
+      setupContract(); 
+    }
+
+  
+  }, [chosenNetwork, currentAccount])
 
   // Detect change in Metamask account
   useEffect(() => {
-    if (window.ethereum) {
-      window.ethereum.on("chainChanged", (chain) => {
-        const hardhatChainId = '0x7a69';
-        if(chain !== hardhatChainId){
-          alert('Network change detected. Please sign in using the Hardhat Network.');
-          window.location.reload();
+    const {ethereum} = window;
+    if(ethereum) {
+      ethereum.on("chainChanged", (chain) => {
+        if(!availableNetworks.hasOwnProperty(chain)){
+          let netString = ''
+          for(let key in availableNetworks){
+            netString += `- ${availableNetworks[key]} \n `
+          }
+          console.log(`Please connect to one of the following networks in MetaMask: \n \n ${netString}`);
+        }else{
+          setChosenNetwork(availableNetworks[chain]);
         }
-        //
+        window.location.reload();
       });
 
-      window.ethereum.on("accountsChanged", (accounts) => {
+      ethereum.on("accountsChanged", (accounts) => {
         if(accounts.length === 0){ // signed out
           window.location.reload();
         }else{
           setCurrentAccount(accounts[0]);
         }
-        
       });
     }
-  },[]);
+  },[chosenNetwork]);
 
   return (
     <div className="App">
-      <NavBar currentAccount={currentAccount} connectWallet={connectWallet}/>
+      <NavBar currentAccount={currentAccount} connectWallet={connectWallet} chosenNetwork={chosenNetwork}/>
      {currentAccount === '' ? (
            <div style={{width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
-        <HomePanel text='Please sign in.'  />
+        <HomePanel text='Please sign in.'/>
       </div>
      ) :
      correctNetwork ? (
