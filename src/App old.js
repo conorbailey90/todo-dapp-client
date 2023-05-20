@@ -11,28 +11,12 @@ import HomePanel from './components/HomePanel';
 import './App.css';
 
 function App() {
-  const [signedIn, setSignedIn] = useState(false);
   const [taskContract, setTaskContract] = useState(null);
   const [tasks, setTasks] = useState([]);
-  const [currentNetwork, setCurrentNetwork] = useState(null);
+  const [chosenNetwork, setChosenNetwork] = useState(null)
   const [currentAccount, setCurrentAccount] = useState('');
-  const [supportedNetwork, setSupportedNetwork] = useState(false);
+  const [correctNetwork, setCorrectNetwork] = useState(false);
 
-  const setNetwork = async(chainId) => {
-    try {
-      setCurrentAccount('');
-      const {ethereum } = window;
-      await ethereum.request({
-        method: 'wallet_switchEthereumChain',
-        params: [{ chainId: chainId }],
-      });
-      
-    } catch (switchError) {
-      console.log(switchError)
-    }
-  }
-
-  
   const connectWallet = async () => {
     try{
       // Check MetaMask is installed...
@@ -42,18 +26,26 @@ function App() {
         console.log('MetaMask not detected...');
         return
       }
-      if(!supportedNetwork){
+
+      // Check that user is connected to a correct available network...
+      const chainId = await ethereum.request({ method: 'eth_chainId' });
+      // console.log(`Connected to chain: ${chainId}`)
+
+      if(availableNetworks.hasOwnProperty(chainId)){
+        setChosenNetwork(availableNetworks[chainId]);
+        setCorrectNetwork(true);
+      }else{
         let netString = ''
         for(let key in availableNetworks){
           netString += `- ${availableNetworks[key]} \n `
         }
         alert(`Please connect to one of the following networks in MetaMask: \n \n ${netString}`);
+        setCorrectNetwork(false);
         return
       }
 
-      const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+      const accounts = await ethereum.request({ method: 'eth_requestAccounts' })
       setCurrentAccount(accounts[0]) 
-      setSignedIn(true)
     }catch(err){
       console.error(err)
       if(err.code === -32002){
@@ -103,16 +95,16 @@ function App() {
 
   // Set up contract with ethers js library
   useEffect(() => {
-    if(currentAccount && currentNetwork){
+    if(currentAccount && chosenNetwork){
       const setupContract = async () => {
         const provider = new ethers.BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();
-        const TaskContract = new ethers.Contract(TaskContractAddress[currentNetwork], TaskAbi.abi, signer); 
+        const TaskContract = new ethers.Contract(TaskContractAddress[chosenNetwork], TaskAbi.abi, signer); 
         setTaskContract(TaskContract); 
       }
       setupContract(); 
     }
-  }, [currentNetwork, currentAccount])
+  }, [chosenNetwork, currentAccount])
 
   // Detect change in Metamask account
   useEffect(() => {
@@ -125,65 +117,60 @@ function App() {
             netString += `- ${availableNetworks[key]} \n `
           }
           console.log(`Please connect to one of the following networks in MetaMask: \n \n ${netString}`);
-          setSupportedNetwork(false);
-          setCurrentNetwork(`${chain} network not supported.`);
-          setCurrentAccount('');
-          setSignedIn(false);
         }else{
-          setSupportedNetwork(true);
-          setCurrentNetwork(availableNetworks[chain]);
-          setCurrentAccount('');
-          setSignedIn(false)
+          setCorrectNetwork(true);
+          setChosenNetwork(availableNetworks[chain]);
         }
+        window.location.reload();
       });
 
       ethereum.on("accountsChanged", async (accounts) => {
         if(accounts.length === 0){ // signed out
-          console.log('heree!!!')
-          setCurrentAccount('')
-          setSignedIn(false);
-        }else if(signedIn){
-          setCurrentAccount(accounts[0])
-        }
+          window.location.reload();
+        }else{
+          setCurrentAccount(accounts[0]);
+          const chainId = await ethereum.request({ method: 'eth_chainId' });    
+          if(availableNetworks.hasOwnProperty(chainId)){
+            setChosenNetwork(availableNetworks[chainId]);
+            setCorrectNetwork(true);
+          }
+       }
     })
     }
-},[currentNetwork, signedIn]);
+},[chosenNetwork]);
 
 useEffect(() => {
-  const detectNetwork = async () => {
-    const {ethereum} = window;
-    if(ethereum){
-      const chainId = await ethereum.request({ method: 'eth_chainId' });
-      if(availableNetworks.hasOwnProperty(chainId)){
-        setCurrentNetwork(availableNetworks[chainId])
-        setSupportedNetwork(true);
-      }else{
-        setCurrentNetwork(`${chainId} network not supported.`);
-        setSupportedNetwork(false);
-      }
-    }
+  async function change(){
+    await window.ethereum.request({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId: '0xf00' }],
+    });
   }
-  detectNetwork();
- 
-},[])
+  change()
+})
 
   return (
     <div className="App">
-      <NavBar currentAccount={currentAccount} chosenNetwork={currentNetwork} signedIn={signedIn}/>
-     {currentAccount !== '' && supportedNetwork && signedIn ? (
-          <div style={{width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
-            <TaskForm addTask={addTask} />
-            <TaskContainer tasks={tasks} deleteTask={deleteTask} />
-          </div>
-     ) 
-     :
+      <NavBar currentAccount={currentAccount} connectWallet={connectWallet} chosenNetwork={chosenNetwork}/>
+     {currentAccount === '' ? (
+           <div style={{width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
+        <HomePanel text='Please sign in.'/>
+      </div>
+     ) :
+     correctNetwork ? (
+      <div style={{width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
+        <TaskForm addTask={addTask} />
+        <TaskContainer tasks={tasks} deleteTask={deleteTask} />
+        
+      </div>
+     ) :
      (
       <div style={{width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
-        <HomePanel availableNetworks={availableNetworks} currentNetwork={currentNetwork} connectWallet={connectWallet} setNetwork={setNetwork} />
+        <HomePanel text='Please connect to the hardhat network' />
       </div>
      )
      }
-    </div>
+     </div>
   )
 }
 export default App;

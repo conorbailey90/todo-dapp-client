@@ -1,3 +1,33 @@
 .home__panel {
-  width: 80%;
+  width: 50%;
+  border: 1px solid rgb(0, 0, 0);
+  padding: 1rem;
+  align-items: center;
+}
+
+.network__select{
+  background-color: transparent;
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid white;
+  padding: 1rem 0;
+  border-radius: 0;
+}
+
+.network__select:focus{
+  outline: none;
+}
+
+.connect__btn{
+  width: 100%;
+  padding: 1rem;
+  background-color: transparent;
+  margin-top: 1rem;
+  border: 1px solid black;
+  transition: .5s;
+}
+
+.connect__btn:hover{
+  cursor: pointer;
+  background-color: rgba(255, 255, 255, 0.155);
 }

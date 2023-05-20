@@ -1,24 +1,26 @@
 @font-face {
-  font-family: 'bender';
-  src: url(../public/Switzer-Regular.woff2) format("woff2");
+  font-family: "RM-Mono";
+  src: url(../public/RMMono-Regular.otf) format("opentype");
 }
 
-*{
+* {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: bender, sans-serif;
-  letter-spacing: -.05em;
+  font-family: "RM-Mono", sans-serif;
+  letter-spacing: -0.05em;
   font-weight: 400;
+  text-transform: uppercase;
   color: white;
-  
+  font-size: .9rem;
 }
 
-html, body{
+html,
+body {
   background-color: #161616;
 }
 
-.App{
+.App {
   display: flex;
   flex-direction: column;
   align-items: center;
